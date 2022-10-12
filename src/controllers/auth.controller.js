@@ -1,4 +1,7 @@
 import bcrypt from "bcrypt";
+
+import { v4 as uuid } from "uuid";
+
 import connection from "../database/database.js";
 
 async function singUp(req, res) {
@@ -31,4 +34,25 @@ async function singUp(req, res) {
   }
 }
 
-export { singUp };
+async function signIn(req, res) {
+  try {
+    const user = res.locals.user;
+    const token = uuid();
+
+    console.log(token);
+    console.log(user);
+
+    await connection.query(
+      `INSERT INTO sessions ("userId", "token") VALUES ($1, $2)`,
+      [user[0].id, token]
+    );
+
+    res.status(201).send({ token: `${token}` });
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { singUp, signIn };
