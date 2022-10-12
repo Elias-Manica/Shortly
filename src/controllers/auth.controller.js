@@ -1,6 +1,5 @@
+import bcrypt from "bcrypt";
 import connection from "../database/database.js";
-
-import { signUp } from "../schemas/authSchema.js";
 
 async function singUp(req, res) {
   try {
@@ -15,9 +14,13 @@ async function singUp(req, res) {
       return;
     }
 
+    const passwordEncrypted = bcrypt.hashSync(req.body.password, 10);
+
+    console.log(passwordEncrypted);
+
     await connection.query(
       `INSERT INTO users (name, email, password) VALUES ($1, $2, $3);`,
-      [req.body.name, req.body.email, req.body.password]
+      [req.body.name, req.body.email, passwordEncrypted]
     );
 
     res.status(201).send({ msg: "Conta criada com sucesso" });
