@@ -42,6 +42,26 @@ async function signIn(req, res) {
     console.log(token);
     console.log(user);
 
+    const response = await connection.query(
+      `SELECT * FROM sessions WHERE "userId"=$1`,
+      [user[0].id]
+    );
+
+    console.log(response);
+
+    if (response.rows.length === 0) {
+      await connection.query(
+        `INSERT INTO sessions ("userId", "token") VALUES ($1, $2)`,
+        [user[0].id, token]
+      );
+
+      res.status(201).send({ token: `${token}` });
+    }
+
+    await connection.query(`DELETE FROM sessions WHERE "userId"=$1`, [
+      user[0].id,
+    ]);
+
     await connection.query(
       `INSERT INTO sessions ("userId", "token") VALUES ($1, $2)`,
       [user[0].id, token]
