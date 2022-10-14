@@ -23,4 +23,18 @@ async function createShortUrl(req, res) {
   }
 }
 
-export { createShortUrl };
+async function getUrlsById(req, res) {
+  const { id } = req.params;
+  const response = res.locals.response;
+  try {
+    console.log(response, " response controller");
+
+    res.status(200).send(response.rows[0]);
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { createShortUrl, getUrlsById };

@@ -56,6 +56,7 @@ async function signIn(req, res) {
       );
 
       res.status(201).send({ token: `${token}` });
+      return;
     }
 
     await connection.query(`DELETE FROM sessions WHERE "userId"=$1`, [

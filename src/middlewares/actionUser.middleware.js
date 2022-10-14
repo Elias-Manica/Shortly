@@ -13,4 +13,33 @@ async function urlIsValid(req, res, next) {
   next();
 }
 
-export { urlIsValid };
+async function hasUrltToGet(req, res, next) {
+  const { id } = req.params;
+
+  try {
+    if (!Number(id)) {
+      res.status(400).send({ msg: "o id enviado é inválido" });
+      return;
+    }
+
+    const response = await connection.query(
+      `SELECT id, "shortURL", url FROM "linkUsers" WHERE id=$1;`,
+      [Number(id)]
+    );
+
+    if (response.rows.length === 0) {
+      res.status(404).send({ msg: "Essa url não existe" });
+      return;
+    }
+
+    res.locals.response = response;
+
+    next();
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { urlIsValid, hasUrltToGet };
