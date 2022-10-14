@@ -5,12 +5,14 @@ import {
   urlIsValid,
   hasUrltToGet,
   hasUrltToRedirect,
+  urlFromThisUser,
 } from "../middlewares/actionUser.middleware.js";
 
 import {
   createShortUrl,
   getUrlsById,
   redirectToShortUrl,
+  deleteShort,
 } from "../controllers/actionUser.controller.js";
 
 const router = express();
@@ -26,5 +28,13 @@ router.post(
 router.get("/urls/:id", hasUrltToGet, getUrlsById);
 
 router.get("/urls/open/:shortUrl", hasUrltToRedirect, redirectToShortUrl);
+
+router.delete(
+  "/urls/:id",
+  hasToken,
+  tokenIsValid,
+  urlFromThisUser,
+  deleteShort
+);
 
 export default router;

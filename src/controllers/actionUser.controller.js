@@ -72,4 +72,28 @@ async function redirectToShortUrl(req, res) {
   }
 }
 
-export { createShortUrl, getUrlsById, redirectToShortUrl };
+async function deleteShort(req, res) {
+  try {
+    const response = res.locals.response;
+    const userId = res.locals.response.rows[0].userId;
+    const removeViews = res.locals.response.rows[0].visitCountUrl;
+    console.log(response);
+
+    const { id } = req.params;
+
+    await connection.query(
+      `UPDATE "usersQuantity" SET "visitCount"="visitCount" - $1 WHERE "userId"=$2;`,
+      [removeViews, userId]
+    );
+
+    await connection.query(`DELETE FROM "linkUsers" WHERE id=$1`, [id]);
+
+    res.status(204).send({ msg: "Link deletado com sucesso" });
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { createShortUrl, getUrlsById, redirectToShortUrl, deleteShort };
