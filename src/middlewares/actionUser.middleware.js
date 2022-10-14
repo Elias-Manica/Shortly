@@ -42,4 +42,27 @@ async function hasUrltToGet(req, res, next) {
   }
 }
 
-export { urlIsValid, hasUrltToGet };
+async function hasUrltToRedirect(req, res, next) {
+  const { shortUrl } = req.params;
+  try {
+    const response = await connection.query(
+      `SELECT * FROM "linkUsers" WHERE "shortURL"=$1;`,
+      [shortUrl]
+    );
+
+    if (response.rows.length === 0) {
+      res.status(404).send({ msg: "Essa url não existe" });
+      return;
+    }
+
+    res.locals.response = response;
+
+    next();
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { urlIsValid, hasUrltToGet, hasUrltToRedirect };

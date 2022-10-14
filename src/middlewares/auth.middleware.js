@@ -34,7 +34,6 @@ async function bodySignInIsValid(req, res, next) {
     `SELECT * FROM users WHERE email=$1`,
     [req.body.email]
   );
-  console.log(response.rows);
 
   if (response.rows.length === 0) {
     res.status(401).send({ msg: "Email ou senha incorretos" });
@@ -42,9 +41,6 @@ async function bodySignInIsValid(req, res, next) {
   }
 
   const { password } = req.body;
-
-  console.log(response.rows[0].password, req.body.password);
-  console.log(bcrypt.compareSync(password, response.rows[0].password));
 
   if (!bcrypt.compareSync(password, response.rows[0].password)) {
     res.status(401).send({ msg: "Email ou senha incorretos" });
@@ -58,7 +54,6 @@ async function bodySignInIsValid(req, res, next) {
 
 async function hasToken(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  console.log(token, " token");
 
   if (!token) {
     res.status(401).send({ msg: "Token de acesso não enviado" });
@@ -75,7 +70,6 @@ async function tokenIsValid(req, res, next) {
       `SELECT * FROM sessions WHERE token=$1`,
       [token]
     );
-    console.log(response);
 
     if (response.rows.length === 0) {
       res.status(401).send({ msg: "Token de acesso inválido" });

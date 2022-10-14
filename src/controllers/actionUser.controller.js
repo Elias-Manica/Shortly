@@ -6,14 +6,27 @@ async function createShortUrl(req, res) {
   try {
     const url = req.body.url;
     const userId = res.locals.id;
-    console.log(userId, " userId");
+
     let urlShort = nanoid();
-    console.log(urlShort, " urlSHort");
 
     await connection.query(
       `INSERT INTO "linkUsers" ("userId", url, "shortURL") VALUES ($1, $2, $3);`,
       [userId, url, urlShort]
     );
+
+    const responseCatchUser = await connection.query(
+      `SELECT * FROM "usersQuantity" WHERE "userId"=$1;`,
+      [userId]
+    );
+
+    if (responseCatchUser.rows.length === 0) {
+      await connection.query(
+        `INSERT INTO "usersQuantity" ("userId", "visitCount") VALUES ($1, $2);`,
+        [userId, 0]
+      );
+      res.status(201).send({ shortUrl: `${urlShort}` });
+      return;
+    }
 
     res.status(201).send({ shortUrl: `${urlShort}` });
   } catch (error) {
@@ -24,11 +37,8 @@ async function createShortUrl(req, res) {
 }
 
 async function getUrlsById(req, res) {
-  const { id } = req.params;
   const response = res.locals.response;
   try {
-    console.log(response, " response controller");
-
     res.status(200).send(response.rows[0]);
   } catch (error) {
     res
@@ -37,4 +47,29 @@ async function getUrlsById(req, res) {
   }
 }
 
-export { createShortUrl, getUrlsById };
+async function redirectToShortUrl(req, res) {
+  const { shortUrl } = req.params;
+  try {
+    const response = res.locals.response;
+    const url = response.rows[0].url;
+    const userId = response.rows[0].userId;
+
+    await connection.query(
+      `UPDATE "linkUsers" SET "visitCountUrl"="visitCountUrl" + 1 WHERE "shortURL"=$1;`,
+      [shortUrl]
+    );
+
+    await connection.query(
+      `UPDATE "usersQuantity" SET "visitCount"="visitCount" + 1 WHERE "userId"=$1;`,
+      [userId]
+    );
+
+    res.redirect(url);
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { createShortUrl, getUrlsById, redirectToShortUrl };

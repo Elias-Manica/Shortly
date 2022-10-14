@@ -4,11 +4,13 @@ import { hasToken, tokenIsValid } from "../middlewares/auth.middleware.js";
 import {
   urlIsValid,
   hasUrltToGet,
+  hasUrltToRedirect,
 } from "../middlewares/actionUser.middleware.js";
 
 import {
   createShortUrl,
   getUrlsById,
+  redirectToShortUrl,
 } from "../controllers/actionUser.controller.js";
 
 const router = express();
@@ -22,5 +24,7 @@ router.post(
 );
 
 router.get("/urls/:id", hasUrltToGet, getUrlsById);
+
+router.get("/urls/open/:shortUrl", hasUrltToRedirect, redirectToShortUrl);
 
 export default router;

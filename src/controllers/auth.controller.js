@@ -13,13 +13,11 @@ async function singUp(req, res) {
 
     if (response.rows.length > 0) {
       res.status(409).send({ msg: "Email já cadastrado" });
-      console.log(response);
+
       return;
     }
 
     const passwordEncrypted = bcrypt.hashSync(req.body.password, 10);
-
-    console.log(passwordEncrypted);
 
     await connection.query(
       `INSERT INTO users (name, email, password) VALUES ($1, $2, $3);`,
@@ -39,15 +37,10 @@ async function signIn(req, res) {
     const user = res.locals.user;
     const token = uuid();
 
-    console.log(token);
-    console.log(user);
-
     const response = await connection.query(
       `SELECT * FROM sessions WHERE "userId"=$1`,
       [user[0].id]
     );
-
-    console.log(response);
 
     if (response.rows.length === 0) {
       await connection.query(
