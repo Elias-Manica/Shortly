@@ -56,4 +56,40 @@ async function bodySignInIsValid(req, res, next) {
   next();
 }
 
-export { bodyIsValid, bodySignInIsValid };
+async function hasToken(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  console.log(token, " token");
+
+  if (!token) {
+    res.status(401).send({ msg: "Token de acesso não enviado" });
+    return;
+  }
+
+  next();
+}
+
+async function tokenIsValid(req, res, next) {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const response = await connection.query(
+      `SELECT * FROM sessions WHERE token=$1`,
+      [token]
+    );
+    console.log(response);
+
+    if (response.rows.length === 0) {
+      res.status(401).send({ msg: "Token de acesso inválido" });
+      return;
+    }
+
+    res.locals.id = response.rows[0].userId;
+
+    next();
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { bodyIsValid, bodySignInIsValid, hasToken, tokenIsValid };
