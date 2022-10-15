@@ -13,6 +13,7 @@ import {
   getUrlsById,
   redirectToShortUrl,
   deleteShort,
+  getProfileUser,
 } from "../controllers/actionUser.controller.js";
 
 const router = express();
@@ -36,5 +37,7 @@ router.delete(
   urlFromThisUser,
   deleteShort
 );
+
+router.get("/users/me", hasToken, tokenIsValid, getProfileUser);
 
 export default router;

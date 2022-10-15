@@ -74,10 +74,8 @@ async function redirectToShortUrl(req, res) {
 
 async function deleteShort(req, res) {
   try {
-    const response = res.locals.response;
     const userId = res.locals.response.rows[0].userId;
     const removeViews = res.locals.response.rows[0].visitCountUrl;
-    console.log(response);
 
     const { id } = req.params;
 
@@ -96,4 +94,37 @@ async function deleteShort(req, res) {
   }
 }
 
-export { createShortUrl, getUrlsById, redirectToShortUrl, deleteShort };
+async function getProfileUser(req, res) {
+  try {
+    const id = res.locals.id;
+
+    const response = await connection.query(
+      `SELECT users.id, users.name, "usersQuantity"."visitCount", json_agg(json_build_object('id', "linkUsers".id, 'shortUrl', "linkUsers"."shortURL", 'url', "linkUsers".url, 'visitCount', "linkUsers"."visitCountUrl")) AS "shortenedUrls" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" JOIN "linkUsers" ON users.id = "linkUsers"."userId" WHERE users.id = $1 GROUP BY users.id, "usersQuantity"."visitCount";`,
+      [id]
+    );
+
+    if (response.rows.length === 0) {
+      const responseEmpty = await connection.query(
+        `SELECT users.id, users.name, "usersQuantity"."visitCount", '[]'::json AS "shortenedUrls" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" WHERE users.id = $1 GROUP BY users.id, "usersQuantity"."visitCount";`,
+        [id]
+      );
+
+      res.status(200).send(responseEmpty.rows[0]);
+      return;
+    }
+
+    res.status(200).send(response.rows[0]);
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export {
+  createShortUrl,
+  getUrlsById,
+  redirectToShortUrl,
+  deleteShort,
+  getProfileUser,
+};
