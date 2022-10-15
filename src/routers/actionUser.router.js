@@ -14,6 +14,7 @@ import {
   redirectToShortUrl,
   deleteShort,
   getProfileUser,
+  getRanking,
 } from "../controllers/actionUser.controller.js";
 
 const router = express();
@@ -39,5 +40,7 @@ router.delete(
 );
 
 router.get("/users/me", hasToken, tokenIsValid, getProfileUser);
+
+router.get("/ranking", getRanking);
 
 export default router;

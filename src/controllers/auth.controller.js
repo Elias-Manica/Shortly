@@ -24,6 +24,18 @@ async function singUp(req, res) {
       [req.body.name, req.body.email, passwordEncrypted]
     );
 
+    const responseGetUser = await connection.query(
+      `SELECT * FROM users WHERE email=$1`,
+      [req.body.email]
+    );
+
+    console.log(responseGetUser);
+
+    await connection.query(
+      `INSERT INTO "usersQuantity" ("userId", "visitCount") VALUES ($1, $2);`,
+      [responseGetUser.rows[0].id, 0]
+    );
+
     res.status(201).send({ msg: "Conta criada com sucesso" });
   } catch (error) {
     res

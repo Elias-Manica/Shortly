@@ -14,20 +14,6 @@ async function createShortUrl(req, res) {
       [userId, url, urlShort]
     );
 
-    const responseCatchUser = await connection.query(
-      `SELECT * FROM "usersQuantity" WHERE "userId"=$1;`,
-      [userId]
-    );
-
-    if (responseCatchUser.rows.length === 0) {
-      await connection.query(
-        `INSERT INTO "usersQuantity" ("userId", "visitCount") VALUES ($1, $2);`,
-        [userId, 0]
-      );
-      res.status(201).send({ shortUrl: `${urlShort}` });
-      return;
-    }
-
     res.status(201).send({ shortUrl: `${urlShort}` });
   } catch (error) {
     res
@@ -121,10 +107,25 @@ async function getProfileUser(req, res) {
   }
 }
 
+async function getRanking(req, res) {
+  try {
+    const response = await connection.query(
+      `SELECT users.id, users.name, COUNT("linkUsers".id) AS "linksCount", "usersQuantity"."visitCount" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" LEFT JOIN "linkUsers" ON users.id = "linkUsers"."userId" GROUP BY users.id, "usersQuantity"."visitCount" ORDER BY "usersQuantity"."visitCount" DESC LIMIT 10;`
+    );
+
+    res.send(response.rows);
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
 export {
   createShortUrl,
   getUrlsById,
   redirectToShortUrl,
   deleteShort,
   getProfileUser,
+  getRanking,
 };
