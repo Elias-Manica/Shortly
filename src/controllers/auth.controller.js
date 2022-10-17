@@ -2,36 +2,23 @@ import bcrypt from "bcrypt";
 
 import { v4 as uuid } from "uuid";
 
-import connection from "../database/database.js";
+import * as authRepositorie from "../repositories/authRepositories.js";
 
 async function singUp(req, res) {
   try {
-    const response = await connection.query(
-      `SELECT * FROM users WHERE email=$1;`,
-      [req.body.email]
-    );
-
-    if (response.rows.length > 0) {
-      res.status(409).send({ msg: "Email já cadastrado" });
-
-      return;
-    }
-
     const passwordEncrypted = bcrypt.hashSync(req.body.password, 10);
 
-    await connection.query(
-      `INSERT INTO users (name, email, password) VALUES ($1, $2, $3);`,
-      [req.body.name, req.body.email, passwordEncrypted]
+    await authRepositorie.createUser(
+      req.body.name,
+      req.body.email,
+      passwordEncrypted
     );
 
-    const responseGetUser = await connection.query(
-      `SELECT * FROM users WHERE email=$1`,
-      [req.body.email]
-    );
+    const responseGetUser = await authRepositorie.searchUser(req.body.email);
 
-    await connection.query(
-      `INSERT INTO "usersQuantity" ("userId", "visitCount") VALUES ($1, $2);`,
-      [responseGetUser.rows[0].id, 0]
+    await authRepositorie.createTableUserQuantity(
+      responseGetUser.rows[0].id,
+      0
     );
 
     res.status(201).send({ msg: "Conta criada com sucesso" });
@@ -47,29 +34,18 @@ async function signIn(req, res) {
     const user = res.locals.user;
     const token = uuid();
 
-    const response = await connection.query(
-      `SELECT * FROM sessions WHERE "userId"=$1`,
-      [user[0].id]
-    );
+    const response = await authRepositorie.searchUserById(user[0].id);
 
     if (response.rows.length === 0) {
-      await connection.query(
-        `INSERT INTO sessions ("userId", "token") VALUES ($1, $2)`,
-        [user[0].id, token]
-      );
+      await authRepositorie.createSession(user[0].id, token);
 
       res.status(201).send({ token: `${token}` });
       return;
     }
 
-    await connection.query(`DELETE FROM sessions WHERE "userId"=$1`, [
-      user[0].id,
-    ]);
+    await authRepositorie.deleteSession(user[0].id);
 
-    await connection.query(
-      `INSERT INTO sessions ("userId", "token") VALUES ($1, $2)`,
-      [user[0].id, token]
-    );
+    await authRepositorie.createSession(user[0].id, token);
 
     res.status(201).send({ token: `${token}` });
   } catch (error) {
@@ -83,7 +59,7 @@ async function signOut(req, res) {
   try {
     const token = res.locals.token;
 
-    await connection.query(`DELETE FROM sessions WHERE token=$1`, [token]);
+    await authRepositorie.deleteSessionByToken(token);
     res.status(200).send({ msg: "O usuário foi deslogado" });
   } catch (error) {
     res

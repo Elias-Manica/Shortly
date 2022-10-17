@@ -1,4 +1,4 @@
-import connection from "../database/database.js";
+import * as usersRepository from "../repositories/usersRepositories.js";
 
 import { createShortUrl } from "../schemas/urlPostSchema.js";
 
@@ -22,10 +22,7 @@ async function hasUrltToGet(req, res, next) {
       return;
     }
 
-    const response = await connection.query(
-      `SELECT id, "shortURL", url FROM "linkUsers" WHERE id=$1;`,
-      [Number(id)]
-    );
+    const response = await usersRepository.getUrlById(Number(id));
 
     if (response.rows.length === 0) {
       res.status(404).send({ msg: "Essa url não existe" });
@@ -45,10 +42,7 @@ async function hasUrltToGet(req, res, next) {
 async function hasUrltToRedirect(req, res, next) {
   const { shortUrl } = req.params;
   try {
-    const response = await connection.query(
-      `SELECT * FROM "linkUsers" WHERE "shortURL"=$1;`,
-      [shortUrl]
-    );
+    const response = await usersRepository.getUrlByShortly(shortUrl);
 
     if (response.rows.length === 0) {
       res.status(404).send({ msg: "Essa url não existe" });
@@ -75,10 +69,7 @@ async function urlFromThisUser(req, res, next) {
       return;
     }
 
-    const response = await connection.query(
-      `SELECT * FROM "linkUsers" WHERE id=$1;`,
-      [Number(id)]
-    );
+    const response = await usersRepository.getUrlByUserId(Number(id));
 
     if (response.rows.length === 0) {
       res.status(404).send({ msg: "Essa url não existe" });

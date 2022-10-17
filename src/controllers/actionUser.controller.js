@@ -1,6 +1,6 @@
-import connection from "../database/database.js";
-
 import { nanoid } from "nanoid";
+
+import * as usersRepository from "../repositories/usersRepositories.js";
 
 async function createShortUrl(req, res) {
   try {
@@ -9,10 +9,7 @@ async function createShortUrl(req, res) {
 
     let urlShort = nanoid();
 
-    await connection.query(
-      `INSERT INTO "linkUsers" ("userId", url, "shortURL") VALUES ($1, $2, $3);`,
-      [userId, url, urlShort]
-    );
+    await usersRepository.createShortly(userId, url, urlShort);
 
     res.status(201).send({ shortUrl: `${urlShort}` });
   } catch (error) {
@@ -40,15 +37,9 @@ async function redirectToShortUrl(req, res) {
     const url = response.rows[0].url;
     const userId = response.rows[0].userId;
 
-    await connection.query(
-      `UPDATE "linkUsers" SET "visitCountUrl"="visitCountUrl" + 1 WHERE "shortURL"=$1;`,
-      [shortUrl]
-    );
+    await usersRepository.updateViewShortly(shortUrl);
 
-    await connection.query(
-      `UPDATE "usersQuantity" SET "visitCount"="visitCount" + 1 WHERE "userId"=$1;`,
-      [userId]
-    );
+    await usersRepository.updateViewUser(userId);
 
     res.redirect(url);
   } catch (error) {
@@ -65,12 +56,9 @@ async function deleteShort(req, res) {
 
     const { id } = req.params;
 
-    await connection.query(
-      `UPDATE "usersQuantity" SET "visitCount"="visitCount" - $1 WHERE "userId"=$2;`,
-      [removeViews, userId]
-    );
+    await usersRepository.removeViewShortly(removeViews, userId);
 
-    await connection.query(`DELETE FROM "linkUsers" WHERE id=$1`, [id]);
+    await usersRepository.removeShortly(id);
 
     res.status(204).send({ msg: "Link deletado com sucesso" });
   } catch (error) {
@@ -84,16 +72,10 @@ async function getProfileUser(req, res) {
   try {
     const id = res.locals.id;
 
-    const response = await connection.query(
-      `SELECT users.id, users.name, "usersQuantity"."visitCount", json_agg(json_build_object('id', "linkUsers".id, 'shortUrl', "linkUsers"."shortURL", 'url', "linkUsers".url, 'visitCount', "linkUsers"."visitCountUrl")) AS "shortenedUrls" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" JOIN "linkUsers" ON users.id = "linkUsers"."userId" WHERE users.id = $1 GROUP BY users.id, "usersQuantity"."visitCount";`,
-      [id]
-    );
+    const response = await usersRepository.getProfileWithShortly(id);
 
     if (response.rows.length === 0) {
-      const responseEmpty = await connection.query(
-        `SELECT users.id, users.name, "usersQuantity"."visitCount", '[]'::json AS "shortenedUrls" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" WHERE users.id = $1 GROUP BY users.id, "usersQuantity"."visitCount";`,
-        [id]
-      );
+      const responseEmpty = await usersRepository.getProfileWithoutShortly(id);
 
       res.status(200).send(responseEmpty.rows[0]);
       return;
@@ -109,9 +91,7 @@ async function getProfileUser(req, res) {
 
 async function getRanking(req, res) {
   try {
-    const response = await connection.query(
-      `SELECT users.id, users.name, COUNT("linkUsers".id) AS "linksCount", "usersQuantity"."visitCount" FROM users JOIN "usersQuantity" ON users.id = "usersQuantity"."userId" LEFT JOIN "linkUsers" ON users.id = "linkUsers"."userId" GROUP BY users.id, "usersQuantity"."visitCount" ORDER BY "usersQuantity"."visitCount" DESC LIMIT 10;`
-    );
+    const response = await usersRepository.getRanking();
 
     res.send(response.rows);
   } catch (error) {
