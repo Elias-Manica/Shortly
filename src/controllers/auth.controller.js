@@ -29,8 +29,6 @@ async function singUp(req, res) {
       [req.body.email]
     );
 
-    console.log(responseGetUser);
-
     await connection.query(
       `INSERT INTO "usersQuantity" ("userId", "visitCount") VALUES ($1, $2);`,
       [responseGetUser.rows[0].id, 0]
@@ -81,4 +79,17 @@ async function signIn(req, res) {
   }
 }
 
-export { singUp, signIn };
+async function signOut(req, res) {
+  try {
+    const token = res.locals.token;
+
+    await connection.query(`DELETE FROM sessions WHERE token=$1`, [token]);
+    res.status(200).send({ msg: "O usuário foi deslogado" });
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { singUp, signIn, signOut };

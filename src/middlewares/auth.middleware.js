@@ -86,4 +86,27 @@ async function tokenIsValid(req, res, next) {
   }
 }
 
-export { bodyIsValid, bodySignInIsValid, hasToken, tokenIsValid };
+async function isLogged(req, res, next) {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const response = await connection.query(
+      `SELECT * FROM sessions WHERE token=$1`,
+      [token]
+    );
+
+    if (response.rows.length === 0) {
+      res.status(404).send({ msg: "Usuário já está desconectado" });
+      return;
+    }
+
+    res.locals.token = response.rows[0].token;
+
+    next();
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export { bodyIsValid, bodySignInIsValid, hasToken, tokenIsValid, isLogged };
