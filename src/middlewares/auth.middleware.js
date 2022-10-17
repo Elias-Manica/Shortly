@@ -1,6 +1,6 @@
-import connection from "../database/database.js";
-
 import bcrypt from "bcrypt";
+
+import * as authRepositorie from "../repositories/authRepositories.js";
 
 import { signUp, signIn } from "../schemas/authSchema.js";
 
@@ -30,10 +30,7 @@ async function bodySignInIsValid(req, res, next) {
     return;
   }
 
-  const response = await connection.query(
-    `SELECT * FROM users WHERE email=$1`,
-    [req.body.email]
-  );
+  const response = await authRepositorie.searchUser(req.body.email);
 
   if (response.rows.length === 0) {
     res.status(401).send({ msg: "Email ou senha incorretos" });
@@ -66,10 +63,7 @@ async function hasToken(req, res, next) {
 async function tokenIsValid(req, res, next) {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const response = await connection.query(
-      `SELECT * FROM sessions WHERE token=$1`,
-      [token]
-    );
+    const response = await authRepositorie.searchSessionByToken(token);
 
     if (response.rows.length === 0) {
       res.status(401).send({ msg: "Token de acesso inválido" });
@@ -89,10 +83,7 @@ async function tokenIsValid(req, res, next) {
 async function isLogged(req, res, next) {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const response = await connection.query(
-      `SELECT * FROM sessions WHERE token=$1`,
-      [token]
-    );
+    const response = await authRepositorie.searchSessionByToken(token);
 
     if (response.rows.length === 0) {
       res.status(404).send({ msg: "Usuário já está desconectado" });
@@ -109,4 +100,28 @@ async function isLogged(req, res, next) {
   }
 }
 
-export { bodyIsValid, bodySignInIsValid, hasToken, tokenIsValid, isLogged };
+async function emailIsAvaible(req, res, next) {
+  try {
+    const response = await authRepositorie.searchUser(req.body.email);
+
+    if (response.rows.length > 0) {
+      res.status(409).send({ msg: "Email já cadastrado" });
+
+      return;
+    }
+    next();
+  } catch (error) {
+    res
+      .status(500)
+      .send({ msg: "Erro no servidor, tente novamente mais tarde" });
+  }
+}
+
+export {
+  bodyIsValid,
+  bodySignInIsValid,
+  hasToken,
+  tokenIsValid,
+  isLogged,
+  emailIsAvaible,
+};
